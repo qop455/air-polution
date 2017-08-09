@@ -1,0 +1,41 @@
+data preprocess:
+
+"101年二林站_20130424.xls"
+reshape.ipynb
+"101.csv"
+
+"101.csv" ~ "105.csv"
+merge.ipynb
+"二林.csv"
+
+"二林.csv" ~ "線西.csv"
+merge_all.ipynb
+"all.csv"
+
+"all.csv"
+lite.ipynb
+"lite.csv"
+
+"lite.csv"
+filted_to_nan.ipynb
+"nan.csv"
+
+"nan.csv"
+separation.ipynb
+"separated.csv"
+
+"separated.csv"
+dummy.ipynb
+"dummy.csv"
+
+"dummy.csv"
+wind.ipynb
+"wind.csv"
+
+"wind.csv"
+date_feature.ipynb
+"date.csv"
+
+"date.csv"
+timeseries.ipynb
+"timeseries.csv"
