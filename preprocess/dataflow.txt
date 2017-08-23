@@ -4,38 +4,19 @@ data preprocess:
 reshape.ipynb
 "101.csv"
 
-"101.csv" ~ "105.csv"
+"96.csv" ~ "105.csv"
 merge.ipynb
 "二林.csv"
 
-"二林.csv" ~ "線西.csv"
+"二林.csv" ~ "彰化.csv"
 merge_all.ipynb
-"all.csv"
+"raw.csv"
 
-"all.csv"
-lite.ipynb
-"lite.csv"
-
-"lite.csv"
+"raw.csv"
 filted_to_nan.ipynb
-"nan.csv"
+"ensemble.csv"
 
-"nan.csv"
-separation.ipynb
-"separated.csv"
-
-"separated.csv"
-dummy.ipynb
-"dummy.csv"
-
-"dummy.csv"
-wind.ipynb
-"wind.csv"
-
-"wind.csv"
+"ensemble.csv"
 date_feature.ipynb
-"date.csv"
++"date.csv"
 
-"date.csv"
-timeseries.ipynb
-"timeseries.csv"
