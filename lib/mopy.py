@@ -27,21 +27,30 @@ def InterpolateSeries(series):
         raise TypeError("Input expected type pandas.Series, received type", type(series))
 
 class EnsembleModel:
-    DEFAULT_STRUCTURE = {"A":"XGB", "B":"MLP", "C":"XGB"}
-    structure = dict() 
+    structure = {"A":"XGB", "B":"MLP", "C":"XGB"}
     models = list()
 
-    def __init__(self, structure=DEFAULT_STRUCTURE):
+    def __init__(self, structure):
         self.structure = structure
         self.__create()
 
-    def __create():
-        for k, v in structure.iteritems():
+    def __create(self):
+        for k, v in self.structure.iteritems():
             if v == "XGB":
-                models.append(xgboost.XGBRegressor())
+                self.models.append(xgboost.XGBRegressor())
             elif v == "MLP":
-                models.append(sklearn.neural_network.MLPRegressor())
+                self.models.append(sklearn.neural_network.MLPRegressor())
             elif v == "LR":
-                nodels.append(sklearn.linear_model.LinearRegression())
+                self.models.append(sklearn.linear_model.LinearRegression())
             else:
                 raise ValueError("Invalid structure '%s' to create."%(self.structure)) 
+        
+    def fit(self, x, y):
+        return
+    
+    def predict(self, x):
+        return
+    
+    
+    
+    
