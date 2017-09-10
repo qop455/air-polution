@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+"""
+@author: jason
+"""
+
 from pandas import Series, DataFrame, concat
 from numpy import nan, isnan
 from xgboost import XGBRegressor
@@ -24,9 +29,9 @@ def CheckSeriesValidity(series):
     else:
         raise TypeError("Input expected type pandas.Series, received type", type(series))
 
-def InterpolateSeries(series):
+def InterpolateSeries(series, step):
     if isinstance(series, Series):
-        return series.interpolate(limit_direction="both")
+        return series.interpolate(limit_direction=step)
     else:
         raise TypeError("Input expected type pandas.Series, received type", type(series))
 
