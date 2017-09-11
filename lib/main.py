@@ -45,9 +45,14 @@ col_RAIN = [f for f in data.columns.tolist() if "RAIN" in f]
 col_WD = [f for f in data.columns.tolist() if "WD" in f]
 col_WS = [f for f in data.columns.tolist() if "WS" in f]
 
+print(data.shape)
+droplist = list()
 for index, raw in data.iterrows():
-    if mo.CheckSeriesValidity(raw[col_PM25]):
+    if mo.CheckSeriesValidity(raw[col_PM25]) and mo.CheckSeriesValidity(raw[col_TEMP]) and mo.CheckSeriesValidity(raw[col_RH]) and mo.CheckSeriesValidity(raw[col_RAIN]) and mo.CheckSeriesValidity(raw[col_WD]) and mo.CheckSeriesValidity(raw[col_WS]):
         pass
     else:
-        data.drop(data.index[[index]], inplace=True)
-        
+        droplist.append(index)
+data.drop(data.index[[droplist]], inplace=True)
+data = mo.InterpolateSeries(data)
+
+print(data.shape)
