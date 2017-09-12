@@ -15,17 +15,20 @@ TIMEFORMAT = "%Y-%m-%d %H:%M:%S"
 
 data = pd.read_csv("../data/central_reg/filted/1.csv")
 data = data[:100]
+f=12
+n=6
 
-for i in range(12):
-    data["PM25_"+str(i+1)] = data["PM25"].shift(i+1)
-for i in range(6):
-    data["F_TEMP_"+str(i+1)] = data["TEMP"].shift(-(i+1))
-    data["F_RH_"+str(i+1)] = data["RH"].shift(-(i+1))
-    data["F_RAIN_"+str(i+1)] = data["RAIN"].shift(-(i+1))
-    data["F_WD_"+str(i+1)] = data["WD"].shift(-(i+1))
-    data["F_WS_"+str(i+1)] = data["WS"].shift(-(i+1))
-for i in range(6):
-    data["Target_"+str(i+1)] = data["PM25"].shift(-(i+1))
+for i in range(f):
+    data["PM25_%d"%(i+1)] = data["PM25"].shift(i+1)
+for i in range(n):
+    data["F_TEMP_%d"%(i+1)] = data["TEMP"].shift(-(i+1))
+    data["F_RH_%d"%(i+1)] = data["RH"].shift(-(i+1))
+    data["F_RAIN_%d"%(i+1)] = data["RAIN"].shift(-(i+1))
+    data["F_WD_%d"%(i+1)] = data["WD"].shift(-(i+1))
+    data["F_WS_%d"%(i+1)] = data["WS"].shift(-(i+1))
+for i in range(n):
+    data["Target_%d"%(i+1)] = data["PM25"].shift(-(i+1))
+
 '''
 timeFeature = pd.DataFrame(index=["hour", "week", "month"])
 for index, item in data.datetime.iteritems():
@@ -41,6 +44,7 @@ month_dummies = pd.get_dummies(data["month"]).rename(columns = lambda x: "m_" + 
 data = pd.concat([data, time_dummies, week_dummies, month_dummies], axis=1)
 data.drop(["hour", "week", "month"], inplace=True, axis=1)
 '''
+
 col_PM25 = [f for f in data.columns.tolist() if "PM25" in f]
 col_TEMP = [f for f in data.columns.tolist() if "TEMP" in f]
 col_RH = [f for f in data.columns.tolist() if "RH" in f]
@@ -50,8 +54,14 @@ col_WS = [f for f in data.columns.tolist() if "WS" in f]
 col_Target = [f for f in data.columns.tolist() if "Target" in f]
 
 col_F = dict()
-for i in range(6):
-    col_F["F"+str(i+1)] = [f for f in data.columns.tolist() if "F_" in f and "_"+str(i+1) in f]
+features = dict()
+for i in range(n):
+    if i == 0:
+        col_F["F%d"%(i+1)] = [f for f in data.columns.tolist() if "F_" in f and "_%d"%(i+1) in f]
+    else:
+        col_F["F%d"%(i+1)] = col_F["F%d"%(i)] + [f for f in data.columns.tolist() if "F_" in f and "_%d"%(i+1) in f]
+
+    features["F%d"%(i+1)] = {"A":col_PM25, "B":col_PM25, "C":col_F["F%d"%(i+1)]}
 
 droplist = list()
 for index, row in data.iterrows():
@@ -59,22 +69,29 @@ for index, row in data.iterrows():
         pass
     else:
         droplist.append(index)
+
 data.drop(data.index[[droplist]], inplace=True)
 data = mo.Interpolate(data)
 train, test = train_test_split(data, test_size = 0.01) 
 ensembleStructure = {"A":"XGB", "B":"MLP", "C":"XGB"}
 
 models = dict()
-features = dict()
-for i in range(6):
-    models["F"+str(i+1)] = mo.EnsembleModel(ensembleStructure)
-    features["F"+str(i+1)] = {"A":col_PM25, "B":col_PM25, "C":col_F["F"+str(i+1)]}
-    models["F"+str(i+1)].fit(train, train["Target_"+str(i+1)], features["F"+str(i+1)])
+for i in range(n):
+    models["F%d"%(i+1)] = mo.EnsembleModel(ensembleStructure, "F%d"%(i+1))
+    models["F%d"%(i+1)].fit(train, train["Target_%d"%(i+1)], features["F%d"%(i+1)])
 
+for key, item in models.items():
+    print(item)
+    print(item.name)
+    print(item.models["C"].feature_importances_)
+ 
 for index, row in test.iterrows():
     preds = np.array([])
-    for i in range(6):
-        pred = models["F"+str(i+1)].predict(row, features["F"+str(i+1)])
+    for i in range(n):
+        model = models["F%d"%(i+1)]
+        print(model.name)
+        print(model.models["C"].feature_importances_)
+        pred = model.predict(row, features["F%d"%(i+1)])
         preds = np.append(preds, pred)
 
     plt.title('6 hours prediction')
@@ -82,9 +99,9 @@ for index, row in test.iterrows():
     plt.ylabel('PM2.5 Value')
     real = row[col_PM25 + col_Target].tolist()
     predict = row[col_PM25].tolist() + preds.tolist()
-    plt.plot(range(19), predict, 'r--', label="Predict")
-    plt.plot(range(19), real, 'b-', label="Real")
-    plt.xticks(range(19), [str(x+1) for x in range(19)])
+    plt.plot(range(n+f+1), predict, 'r--', label="Predict")
+    plt.plot(range(n+f+1), real, 'b-', label="Real")
+    plt.xticks(range(n+f+1), [str(x+1) for x in range(n+f+1)])
     plt.xticks(rotation=90)
     plt.ylim([min(real) - 5, max(real) + 5])
     plt.axhline(y=15.5, color='g', xmin=0.01, xmax=0.99, alpha=0.8)
@@ -93,3 +110,4 @@ for index, row in test.iterrows():
     plt.legend()
     plt.savefig("../output/picture/"+str(index)+".png")
 
+print("Done")

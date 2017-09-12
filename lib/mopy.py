@@ -38,11 +38,10 @@ def Interpolate(data):
         raise TypeError("Input expected type pandas.Series, received type", type(series))
 
 class EnsembleModel:
-    structure = {"A":"XGB", "B":"MLP", "C":"XGB"}
-    models = dict()
-
-    def __init__(self, structure):
+    def __init__(self, structure={"A":"XGB", "B":"MLP", "C":"XGB"}, name="Defalt"):
         self.structure = structure
+        self.models = dict()
+        self.name = name
         self.__create()
 
     def __create(self):
@@ -70,7 +69,7 @@ class EnsembleModel:
             C = x[features["C"]].reset_index(drop=True)
             C = concat([preds, C], axis=1)
             self.models["C"].fit(C, y)
-            
+            print(self.name, C.shape)
             C_pred = self.models["C"].predict(C)
             self.rmse = round(sqrt(mean_squared_error(C_pred, y)), 6)
             #print("RMSE: %f"%(self.rmse))
