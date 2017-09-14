@@ -16,7 +16,6 @@ t = time.time()
 
 station = 1
 data = pd.read_csv("../data/central_reg/filted/" + str(station) + ".csv")
-data = data[:100]
 f=12
 n=6
 
@@ -133,6 +132,4 @@ for index, row in test.iterrows():
     plt.clf()
     '''
 
-print(predict.head())
 predict.to_csv("predict.csv", index=False)
-
