@@ -9,11 +9,14 @@ import time
 import matplotlib.pyplot as plt
 import mopy as mo
 from sklearn.model_selection import train_test_split
+import csv
 #plt.rcParams['figure.figsize'] = [16.0, 8.0]
 TIMEFORMAT = "%Y-%m-%d %H:%M:%S"
 t = time.time()
 
-data = pd.read_csv("../data/central_reg/filted/1.csv")[:1000]
+station = 1
+data = pd.read_csv("../data/central_reg/filted/" + str(station) + ".csv")
+data = data[:100]
 f=12
 n=6
 
@@ -71,7 +74,9 @@ for index, row in data.iterrows():
 
 data.drop(data.index[[droplist]], inplace=True)
 data = mo.Interpolate(data)
-train, test = train_test_split(data, test_size = 0.01) 
+#train, test = train_test_split(data, test_size = 0.01) 
+train, test = data[:-14], data[-14:]
+print("Train shape:%s Test shape:%s"%(train.shape,test.shape)) 
 ensembleStructure = {"A":"XGB", "B":"MLP", "C":"XGB"}
 
 models = dict()
@@ -81,9 +86,7 @@ for i in range(n):
     models["F%d"%(i+1)].fit(train, train["Target_%d"%(i+1)], features["F%d"%(i+1)])
 
 print("Fit time: %d s."%(time.time() - t))
-t = time.time()
 
-'''
 for i in range(n):
     mo.save_ensemble(models["F%d"%(i+1)], "../output/model/F%d"%(i+1))
     
@@ -93,15 +96,24 @@ models = dict()
 for i in range(n):
     path = "../output/model/F%d"%(i+1)
     models["F%d"%(i+1)] = mo.load_ensemble(path)
-'''
+
+df_columns = ("datetime", "station", "pred_1", "pred_2", "pred_3", "pred_4", "pred_5", "pred_6")
+predict = pd.DataFrame(columns=df_columns)
 
 for index, row in test.iterrows():
-    preds = np.array([])
+    preds = [row['datetime']]
+    preds.extend([station])
+
     for i in range(n):
         model = models["F%d"%(i+1)]
         pred = model.predict(row, features["F%d"%(i+1)])
-        preds = np.append(preds, pred)
-        
+        pred = [ '%.2f' % abs(float(elem)) for elem in pred]
+        preds.extend(pred)
+
+    preds = pd.DataFrame([preds], columns=df_columns)
+    predict = predict.append(preds)
+
+    '''
     plt.title('6 hours prediction')
     plt.xlabel('Time Line')
     plt.ylabel('PM2.5 Value')
@@ -119,6 +131,8 @@ for index, row in test.iterrows():
     plt.legend()
     plt.savefig("../output/picture/"+str(index)+".png")
     plt.clf()
-    
-print("Plot time: %d s."%(time.time() - t))
+    '''
+
+print(predict.head())
+predict.to_csv("predict.csv", index=False)
 

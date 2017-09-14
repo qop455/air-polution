@@ -63,7 +63,7 @@ class EnsembleModel:
         
     def fit(self, x, y, features):
         if isinstance(features, dict):
-            self.models["A"].train(x[features["A"]], y)
+            self.models["A"].fit(x[features["A"]], y)
             self.models["B"].fit(x[features["B"]], y)
             
             A_pred = self.models["A"].predict(x[features["A"]])
@@ -74,10 +74,10 @@ class EnsembleModel:
             preds = DataFrame({"A_pred":A_pred, "B_pred":B_pred})
             C = x[features["C"]].reset_index(drop=True)
             C = concat([preds, C], axis=1)
-            self.models["C"].train(C, y)
+            self.models["C"].fit(C, y)
             C_pred = self.models["C"].predict(C)
             self.rmse = round(sqrt(mean_squared_error(C_pred, y)), 6)
-            print("RMSE: %f"%(self.rmse))
+            #print("RMSE: %f"%(self.rmse))
             
         else:
             raise TypeError("Input expected type dict, received type", type(features))
