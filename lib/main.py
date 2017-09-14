@@ -5,16 +5,15 @@
 
 import pandas as pd
 import numpy as np
-from datetime import datetime
+import time
 import matplotlib.pyplot as plt
-import plotly.plotly as py
 import mopy as mo
 from sklearn.model_selection import train_test_split
 #plt.rcParams['figure.figsize'] = [16.0, 8.0]
 TIMEFORMAT = "%Y-%m-%d %H:%M:%S"
+t = time.time()
 
-data = pd.read_csv("../data/central_reg/filted/1.csv")
-data = data[:100]
+data = pd.read_csv("../data/central_reg/filted/1.csv")[:1000]
 f=12
 n=6
 
@@ -77,23 +76,32 @@ ensembleStructure = {"A":"XGB", "B":"MLP", "C":"XGB"}
 
 models = dict()
 for i in range(n):
+    
     models["F%d"%(i+1)] = mo.EnsembleModel(ensembleStructure, "F%d"%(i+1))
     models["F%d"%(i+1)].fit(train, train["Target_%d"%(i+1)], features["F%d"%(i+1)])
 
-for key, item in models.items():
-    print(item)
-    print(item.name)
-    print(item.models["C"].feature_importances_)
- 
+print("Fit time: %d s."%(time.time() - t))
+t = time.time()
+
+'''
+for i in range(n):
+    mo.save_ensemble(models["F%d"%(i+1)], "../output/model/F%d"%(i+1))
+    
+models = None
+models = dict()
+
+for i in range(n):
+    path = "../output/model/F%d"%(i+1)
+    models["F%d"%(i+1)] = mo.load_ensemble(path)
+'''
+
 for index, row in test.iterrows():
     preds = np.array([])
     for i in range(n):
         model = models["F%d"%(i+1)]
-        print(model.name)
-        print(model.models["C"].feature_importances_)
         pred = model.predict(row, features["F%d"%(i+1)])
         preds = np.append(preds, pred)
-
+        
     plt.title('6 hours prediction')
     plt.xlabel('Time Line')
     plt.ylabel('PM2.5 Value')
@@ -101,13 +109,16 @@ for index, row in test.iterrows():
     predict = row[col_PM25].tolist() + preds.tolist()
     plt.plot(range(n+f+1), predict, 'r--', label="Predict")
     plt.plot(range(n+f+1), real, 'b-', label="Real")
-    plt.xticks(range(n+f+1), [str(x+1) for x in range(n+f+1)])
+    plt.xticks(range(n+f+1), [str(x-12) for x in range(n+f+1)])
     plt.xticks(rotation=90)
-    plt.ylim([min(real) - 5, max(real) + 5])
-    plt.axhline(y=15.5, color='g', xmin=0.01, xmax=0.99, alpha=0.8)
-    plt.axhline(y=35.4, color='y', xmin=0.01, xmax=0.99, alpha=0.8)
+    plt.ylim([min(min(predict), min(real)) - 5, max(max(predict), max(real)) + 5])
+    plt.axhline(y=15.5, color='g', linestyle='--', xmin=0.01, xmax=0.99, alpha=0.8)
+    plt.axhline(y=35.4, color='y', linestyle='--', xmin=0.01, xmax=0.99, alpha=0.8)
+    plt.axhline(y=54.5, color='r', linestyle='--', xmin=0.01, xmax=0.99, alpha=0.8)
     plt.axvline(x=12, color='r', ymin=0.01, ymax=0.99, alpha=0.8)
     plt.legend()
     plt.savefig("../output/picture/"+str(index)+".png")
+    plt.clf()
+    
+print("Plot time: %d s."%(time.time() - t))
 
-print("Done")

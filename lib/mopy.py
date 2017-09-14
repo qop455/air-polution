@@ -4,7 +4,7 @@
 """
 
 from pandas import Series, DataFrame, concat
-from numpy import nan, isnan, array, append
+from numpy import nan, isnan, append
 from xgboost import XGBRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import GradientBoostingRegressor
@@ -12,6 +12,14 @@ from sklearn.metrics import mean_squared_error
 from math import sqrt
 from pickle import dump, load, HIGHEST_PROTOCOL
 
+def save_ensemble(obj, filename):
+    with open(filename, 'wb') as handle:
+        dump(obj, handle, protocol=HIGHEST_PROTOCOL)
+
+def load_ensemble(filename):
+    with open(filename, 'rb') as handle:
+        return load(handle)
+            
 def CheckSeriesValidity(series):
     validway = {1:1, 2:3, 3:1, 4:6, 5:3, 6:1}
     nanway = {1:2, 2:4, 3:5, 4:7, 5:7, 6:7}
@@ -35,7 +43,7 @@ def Interpolate(data):
     elif isinstance(data, DataFrame):
         return data.interpolate(limit_direction="both")
     else:
-        raise TypeError("Input expected type pandas.Series, received type", type(series))
+        raise TypeError("Input expected type pandas.Series, received type", type(data))
 
 class EnsembleModel:
     def __init__(self, structure={"A":"XGB", "B":"MLP", "C":"XGB"}, name="Defalt"):
@@ -50,14 +58,12 @@ class EnsembleModel:
                 self.models[k] = GradientBoostingRegressor()
             elif v == "MLP":
                 self.models[k] = MLPRegressor()
-            elif v == "LR":
-                self.models[k] = LinearRegression()
             else:
                 raise ValueError("Invalid structure '%s' to create."%(self.structure)) 
         
     def fit(self, x, y, features):
         if isinstance(features, dict):
-            self.models["A"].fit(x[features["A"]], y)
+            self.models["A"].train(x[features["A"]], y)
             self.models["B"].fit(x[features["B"]], y)
             
             A_pred = self.models["A"].predict(x[features["A"]])
@@ -68,11 +74,10 @@ class EnsembleModel:
             preds = DataFrame({"A_pred":A_pred, "B_pred":B_pred})
             C = x[features["C"]].reset_index(drop=True)
             C = concat([preds, C], axis=1)
-            self.models["C"].fit(C, y)
-            print(self.name, C.shape)
+            self.models["C"].train(C, y)
             C_pred = self.models["C"].predict(C)
             self.rmse = round(sqrt(mean_squared_error(C_pred, y)), 6)
-            #print("RMSE: %f"%(self.rmse))
+            print("RMSE: %f"%(self.rmse))
             
         else:
             raise TypeError("Input expected type dict, received type", type(features))
@@ -92,16 +97,3 @@ class EnsembleModel:
         else:
             raise TypeError("Input expected type pandas.Series, received type", type(x))
     
-    def save(self, filename):
-        if isinstance(filename, str):
-            with open(filename, 'wb') as handle:
-                dump(self, handle, protocol=HIGHEST_PROTOCOL)
-        else:
-            raise TypeError("Input expected type string, received type", type(filename))
-    
-    def load(filename):
-        if isinstance(filename, str):
-            with open(filename, 'rb') as handle:
-                return load(handle)
-        else:
-            raise TypeError("Input expected type string, received type", type(filename))
